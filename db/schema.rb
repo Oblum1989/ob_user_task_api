@@ -10,9 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_13_043150) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_13_053317) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "tasks", force: :cascade do |t|
+    t.string "title", null: false
+    t.text "description"
+    t.integer "status", default: 0
+    t.date "due_date", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["due_date"], name: "index_tasks_on_due_date"
+    t.index ["status"], name: "index_tasks_on_status"
+    t.index ["user_id", "status"], name: "index_tasks_on_user_id_and_status"
+    t.index ["user_id"], name: "index_tasks_on_user_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "email", null: false
@@ -23,4 +37,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_13_043150) do
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["role"], name: "index_users_on_role"
   end
+
+  add_foreign_key "tasks", "users"
 end
