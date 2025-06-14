@@ -11,13 +11,22 @@
 ARG RUBY_VERSION=3.2.2
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
+# Create a non-root user
+RUN groupadd --system --gid 1000 rails && \
+    useradd --uid 1000 --gid rails --shell /bin/bash --create-home rails
+
 # Rails app lives here
 WORKDIR /rails
 
-# Install base packages
+# Install base packages + development tools (for gem compilation)
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install --no-install-recommends -y \
+    curl libjemalloc2 libvips postgresql-client \
+    build-essential git libpq-dev libyaml-dev pkg-config && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives && \
+    mkdir -p /usr/local/bundle && \
+    chown -R rails:rails /usr/local/bundle /rails && \
+    chmod -R 755 /usr/local/bundle
 
 # Set production environment
 ENV RAILS_ENV="production" \
@@ -28,25 +37,24 @@ ENV RAILS_ENV="production" \
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
-# Install packages needed to build gems
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+# Switch to rails user for gem installation
+USER rails:rails
 
 # Install application gems
-COPY Gemfile Gemfile.lock ./
-RUN bundle install && \
+COPY --chown=rails:rails Gemfile Gemfile.lock ./
+
+# Clean any existing bundle cache and set proper permissions before installing
+RUN rm -rf /usr/local/bundle/ruby/*/gems && \
+    mkdir -p /usr/local/bundle/ruby/3.2.0/gems && \
+    bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 # Copy application code
-COPY . .
+COPY --chown=rails:rails . .
 
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
-
-
-
 
 # Final stage for app image
 FROM base
@@ -55,11 +63,12 @@ FROM base
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
-# Run and own only the runtime files as a non-root user for security
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+# Ensure runtime directories exist and have correct ownership
+RUN mkdir -p db log storage tmp && \
     chown -R rails:rails db log storage tmp
-USER 1000:1000
+
+# Use rails user by default
+USER rails:rails
 
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
