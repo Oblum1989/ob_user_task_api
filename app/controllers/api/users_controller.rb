@@ -16,15 +16,6 @@ class Api::UsersController < ApplicationController
     end
   end
 
-  def destroy
-    @user = User.find(params[:id])
-    if @user.destroy
-      head :no_content
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
-    end
-  end
-
   private
 
   def user_params

@@ -1,8 +1,9 @@
 Rails.application.routes.draw do
   namespace :api do
-    resources :users, only: [ :index, :show, :create, :destroy ] do
-      resources :tasks, only: [ :index, :show, :create, :update, :destroy ]
+    resources :users, only: [ :index, :show, :create ] do
+      resources :tasks
     end
+    resources :tasks
   end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

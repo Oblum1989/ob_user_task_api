@@ -59,18 +59,4 @@ RSpec.describe "Api::Users", type: :request do
       end
     end
   end
-
-  describe "DELETE /destroy" do
-    let!(:user) { create(:user) }
-
-    before do
-      delete "/api/users/#{user.id}", headers: { 'Accept': 'application/json' }
-    end
-
-    it { expect(response).to have_http_status(:no_content) }
-
-    it "deletes the user" do
-      expect(User.exists?(user.id)).to be_falsey
-    end
-  end
 end
