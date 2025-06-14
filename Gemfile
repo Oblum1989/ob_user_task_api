@@ -35,6 +35,10 @@ gem "thruster", require: false
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 # gem "rack-cors"
 
+# GraphQL for Ruby on Rails [https://graphql-ruby.org/]
+gem "graphql"
+gem "graphql-batch"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
@@ -50,4 +54,9 @@ group :development, :test do
   gem "faker"
   gem "shoulda-matchers"
   gem "database_cleaner-active_record"
+end
+
+group :development do
+  # GraphiQL interface for Rails [https://github.com/rmosolgo/graphiql-rails]
+  gem "graphiql-rails"
 end
