@@ -12,7 +12,7 @@ RSpec.describe 'api/users', type: :request do
     it "returns all users" do
       json_response = JSON.parse(response.body)
       expect(json_response.length).to eq(3)
-      expect(json_response.first.keys).to match_array([ 'id', 'email', 'name', 'role', 'tasks' ])
+      expect(json_response.first.keys).to match_array([ 'id', 'email', 'full_name', 'role', 'tasks' ])
     end
   end
 
