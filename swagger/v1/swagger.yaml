@@ -5,6 +5,8 @@ info:
   version: v1
   description: API V1 documentation
 tags:
+  - name: Auth
+    description: Operations about authentication
   - name: User
     description: Operations about users
   - name: Task
@@ -47,7 +49,7 @@ components:
         tasks:
           type: array
           items:
-            $ref: '#/components/schemas/Task'
+            $ref: "#/components/schemas/Task"
     Task:
       type: object
       properties:
@@ -71,7 +73,7 @@ components:
       type: object
       properties:
         task:
-          $ref: '#/components/schemas/Task'
+          $ref: "#/components/schemas/Task"
     Error:
       type: object
       properties:
@@ -91,14 +93,102 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     UnprocessableEntity:
       description: Validation errors
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
 paths:
+  "/api/auth/register":
+    post:
+      tags:
+        - Auth
+      summary: register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    full_name:
+                      type: string
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    role:
+                      type: string
+                      enum:
+                        - admin
+                        - user
+                        - guest
+      responses:
+        "201":
+          description: successful registration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/UnprocessableEntity"
+  "/api/auth/login":
+    post:
+      tags:
+        - Auth
+      summary: login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/UnprocessableEntity"
+  "/api/auth/logout":
+    post:
+      tags:
+        - Auth
+      summary: logout user
+      security:
+        - bearer_auth: []
+      responses:
+        "204":
+          description: successful logout
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/NotFound"
   "/api/users/{user_id}/tasks":
     parameters:
       - name: user_id
@@ -108,6 +198,8 @@ paths:
         schema:
           type: string
     get:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: list tasks
@@ -119,8 +211,10 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Task'
+                  $ref: "#/components/schemas/Task"
     post:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: create task
@@ -129,20 +223,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTask'
+              $ref: "#/components/schemas/CreateTask"
       responses:
         "201":
           description: created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         "422":
           description: Unprocessable Entity
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/UnprocessableEntity'
+                $ref: "#/components/responses/UnprocessableEntity"
   "/api/tasks/{id}":
     parameters:
       - name: id
@@ -152,6 +246,8 @@ paths:
         schema:
           type: string
     get:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: show task
@@ -161,14 +257,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/NotFound'
+                $ref: "#/components/responses/NotFound"
     patch:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: update task
@@ -177,27 +275,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: "#/components/schemas/Task"
       responses:
         "200":
           description: successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/NotFound'
+                $ref: "#/components/responses/NotFound"
         "422":
           description: Unprocessable Entity
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/UnprocessableEntity'
+                $ref: "#/components/responses/UnprocessableEntity"
     put:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: update task
@@ -206,27 +306,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: "#/components/schemas/Task"
       responses:
         "200":
           description: successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: "#/components/schemas/Task"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/NotFound'
+                $ref: "#/components/responses/NotFound"
         "422":
           description: Unprocessable Entity
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/UnprocessableEntity'
+                $ref: "#/components/responses/UnprocessableEntity"
     delete:
+      security:
+        - bearer_auth: []
       tags:
         - Task
       summary: delete task
@@ -238,15 +340,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/NotFound'
+                $ref: "#/components/responses/NotFound"
         "422":
           description: Unprocessable Entity
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/UnprocessableEntity'
+                $ref: "#/components/responses/UnprocessableEntity"
   "/api/users":
     get:
+      security:
+        - bearer_auth: []
       tags:
         - User
       summary: list users
@@ -258,30 +362,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserTask'
-    post:
-      tags:
-        - User
-      summary: create user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        "201":
-          description: created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        "422":
-          description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/UnprocessableEntity'
+                  $ref: "#/components/schemas/UserTask"
   "/api/users/{id}":
     parameters:
       - name: id
@@ -291,6 +372,8 @@ paths:
         schema:
           type: string
     get:
+      security:
+        - bearer_auth: []
       tags:
         - User
       summary: show user
@@ -300,13 +383,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserTask'
+                $ref: "#/components/schemas/UserTask"
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/NotFound'
+                $ref: "#/components/responses/NotFound"
 servers:
   - url: http://{defaultHost}
     description: Development server

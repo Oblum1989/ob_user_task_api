@@ -1,25 +1,34 @@
 require 'swagger_helper'
 
 RSpec.describe 'api/tasks', type: :request do
+  let!(:authenticated_user) { create(:user) }
+  let(:auth_headers) { { 'Accept': 'application/json', 'Authorization': "Bearer #{authenticated_user.auth_token}" } }
+
   describe "GET /index" do
     let!(:user) { create(:user) }
     let!(:tasks) { create_list(:task, 3, user: user) }
+
     context "With valid user" do
       before do
-        get "/api/users/#{user.id}/tasks", headers: { 'Accept': 'application/json' }
+        get "/api/users/#{user.id}/tasks", headers: auth_headers
       end
+
       it "list tasks" do
         json_response = JSON.parse(response.body)
         expect(json_response.length).to eq(3)
         expect(json_response.first.keys).to match_array([ 'id', 'title', 'description', 'status', 'due_date' ])
       end
+
       it { expect(response).to have_http_status(:success) }
     end
+
     context "With invalid user" do
       before do
-        get "/api/users/999999/tasks", headers: { 'Accept': 'application/json' }
+        get "/api/users/999999/tasks", headers: auth_headers
       end
+
       it { expect(response).to have_http_status(:not_found) }
+
       it "returns an error message" do
         json_response = JSON.parse(response.body)
         expect(json_response['error']).to eq("Not Found")
@@ -33,8 +42,9 @@ RSpec.describe 'api/tasks', type: :request do
 
     context "With task_id valid" do
       before do
-        get "/api/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
+        get "/api/tasks/#{task.id}", headers: auth_headers
       end
+
       it "returns the task" do
         json_response = JSON.parse(response.body)
         expect(json_response['id']).to eq(task.id)
@@ -47,9 +57,11 @@ RSpec.describe 'api/tasks', type: :request do
 
     context "With task_id invalid" do
       before do
-        get "/api/tasks/999999", headers: { 'Accept': 'application/json' }
+        get "/api/tasks/999999", headers: auth_headers
       end
+
       it { expect(response).to have_http_status(:not_found) }
+
       it "returns an error message" do
         json_response = JSON.parse(response.body)
         expect(json_response['error']).to eq("Not Found")
@@ -70,7 +82,7 @@ RSpec.describe 'api/tasks', type: :request do
 
     context "with valid attributes" do
       before do
-        post "/api/users/#{user.id}/tasks", params: { task: task_attributes }, headers: { 'Accept': 'application/json' }
+        post "/api/users/#{user.id}/tasks", params: { task: task_attributes }, headers: auth_headers
       end
 
       it { expect(response).to have_http_status(:created) }
@@ -89,7 +101,7 @@ RSpec.describe 'api/tasks', type: :request do
         post "/api/tasks", params: {
           task: { title: '' },
           user_id: user.id
-        }, headers: { 'Accept': 'application/json' }
+        }, headers: auth_headers
       end
 
       it { expect(response).to have_http_status(:unprocessable_entity) }
@@ -112,13 +124,16 @@ RSpec.describe 'api/tasks', type: :request do
         due_date: Date.tomorrow
       }
     end
+
     context "with valid attributes" do
       before do
         put "/api/tasks/#{task.id}", params: {
           task: updated_attributes
-        }, headers: { 'Accept': 'application/json' }
+        }, headers: auth_headers
       end
+
       it { expect(response).to have_http_status(:ok) }
+
       it "updates the task" do
         json_response = JSON.parse(response.body)
         expect(json_response['title']).to eq(updated_attributes[:title])
@@ -128,13 +143,16 @@ RSpec.describe 'api/tasks', type: :request do
         expect(json_response['id']).to eq(task.id)
       end
     end
+
     context "with invalid attributes" do
       before do
         put "/api/tasks/#{task.id}", params: {
           task: { title: '' }
-        }, headers: { 'Accept': 'application/json' }
+        }, headers: auth_headers
       end
+
       it { expect(response).to have_http_status(:unprocessable_entity) }
+
       it "returns error messages" do
         json_response = JSON.parse(response.body)
         expect(json_response['errors']).to include("Title can't be blank")
@@ -147,7 +165,7 @@ RSpec.describe 'api/tasks', type: :request do
     let!(:task) { create(:task, user: user) }
 
     before do
-      delete "/api/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
+      delete "/api/tasks/#{task.id}", headers: auth_headers
     end
 
     it { expect(response).to have_http_status(:no_content) }
