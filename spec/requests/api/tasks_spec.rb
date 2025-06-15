@@ -1,65 +1,84 @@
-require 'rails_helper'
+require 'swagger_helper'
 
-RSpec.describe "Api::Tasks", type: :request do
+RSpec.describe 'api/tasks', type: :request do
   describe "GET /index" do
     let!(:user) { create(:user) }
     let!(:tasks) { create_list(:task, 3, user: user) }
-
-    before do
-      get "/api/users/#{user.id}/tasks", headers: { 'Accept': 'application/json' }
+    context "With valid user" do
+      before do
+        get "/api/users/#{user.id}/tasks", headers: { 'Accept': 'application/json' }
+      end
+      it "list tasks" do
+        json_response = JSON.parse(response.body)
+        expect(json_response.length).to eq(3)
+        expect(json_response.first.keys).to match_array([ 'id', 'title', 'description', 'status', 'due_date' ])
+      end
+      it { expect(response).to have_http_status(:success) }
     end
-    it "returns all tasks for the user" do
-      json_response = JSON.parse(response.body)
-      expect(json_response.length).to eq(3)
-      expect(json_response.first.keys).to match_array(['id', 'title', 'description', 'status', 'due_date'])
+    context "With invalid user" do
+      before do
+        get "/api/users/999999/tasks", headers: { 'Accept': 'application/json' }
+      end
+      it { expect(response).to have_http_status(:not_found) }
+      it "returns an error message" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq("Not Found")
+      end
     end
-    it { expect(response).to have_http_status(:success) }
   end
 
   describe "GET /show" do
     let!(:user) { create(:user) }
     let!(:task) { create(:task, user: user) }
 
-    before do
-      get "/api/users/#{user.id}/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
+    context "With task_id valid" do
+      before do
+        get "/api/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
+      end
+      it "returns the task" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['id']).to eq(task.id)
+        expect(json_response['title']).to eq(task.title)
+        expect(json_response['description']).to eq(task.description)
+        expect(json_response['status']).to eq(task.status)
+        expect(json_response['due_date']).to eq(task.due_date.as_json)
+      end
     end
 
-    it "returns the task" do
-      json_response = JSON.parse(response.body)
-      expect(json_response['id']).to eq(task.id)
-      expect(json_response['title']).to eq(task.title)
-      expect(json_response['description']).to eq(task.description)
-      expect(json_response['status']).to eq(task.status)
-      expect(json_response['due_date']).to eq(task.due_date.as_json)
+    context "With task_id invalid" do
+      before do
+        get "/api/tasks/999999", headers: { 'Accept': 'application/json' }
+      end
+      it { expect(response).to have_http_status(:not_found) }
+      it "returns an error message" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq("Not Found")
+      end
     end
-
-    it { expect(response).to have_http_status(:success) }
   end
 
   describe "POST /create" do
     let!(:user) { create(:user) }
     let(:task_attributes) do
       {
-        task: {
-          title: Faker::Lorem.sentence,
-          description: Faker::Lorem.paragraph,
-          status: 'pending',
-          due_date: Date.tomorrow
-        }
+        title: Faker::Lorem.sentence,
+        description: Faker::Lorem.paragraph,
+        status: 'pending',
+        due_date: Date.tomorrow
       }
     end
 
     context "with valid attributes" do
       before do
-        post "/api/users/#{user.id}/tasks", params: task_attributes, headers: { 'Accept': 'application/json' }
+        post "/api/users/#{user.id}/tasks", params: { task: task_attributes }, headers: { 'Accept': 'application/json' }
       end
 
       it { expect(response).to have_http_status(:created) }
 
       it "creates a new task" do
         json_response = JSON.parse(response.body)
-        expect(json_response['title']).to eq(task_attributes[:task][:title])
-        expect(json_response['description']).to eq(task_attributes[:task][:description])
+        expect(json_response['title']).to eq(task_attributes[:title])
+        expect(json_response['description']).to eq(task_attributes[:description])
         expect(json_response['status']).to eq('pending')
         expect(json_response['due_date']).to eq(Date.tomorrow.as_json)
       end
@@ -67,11 +86,55 @@ RSpec.describe "Api::Tasks", type: :request do
 
     context "with invalid attributes" do
       before do
-        post "/api/users/#{user.id}/tasks", params: { task: { title: '' } }, headers: { 'Accept': 'application/json' }
+        post "/api/tasks", params: {
+          task: { title: '' },
+          user_id: user.id
+        }, headers: { 'Accept': 'application/json' }
       end
 
       it { expect(response).to have_http_status(:unprocessable_entity) }
 
+      it "returns error messages" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['errors']).to include("Title can't be blank")
+      end
+    end
+  end
+
+  describe "PUT /update" do
+    let!(:user) { create(:user) }
+    let!(:task) { create(:task, user: user) }
+    let(:updated_attributes) do
+      {
+        title: 'Updated Task Title',
+        description: 'Updated Task Description',
+        status: 'completed',
+        due_date: Date.tomorrow
+      }
+    end
+    context "with valid attributes" do
+      before do
+        put "/api/tasks/#{task.id}", params: {
+          task: updated_attributes
+        }, headers: { 'Accept': 'application/json' }
+      end
+      it { expect(response).to have_http_status(:ok) }
+      it "updates the task" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['title']).to eq(updated_attributes[:title])
+        expect(json_response['description']).to eq(updated_attributes[:description])
+        expect(json_response['status']).to eq(updated_attributes[:status])
+        expect(json_response['due_date']).to eq(updated_attributes[:due_date].as_json)
+        expect(json_response['id']).to eq(task.id)
+      end
+    end
+    context "with invalid attributes" do
+      before do
+        put "/api/tasks/#{task.id}", params: {
+          task: { title: '' }
+        }, headers: { 'Accept': 'application/json' }
+      end
+      it { expect(response).to have_http_status(:unprocessable_entity) }
       it "returns error messages" do
         json_response = JSON.parse(response.body)
         expect(json_response['errors']).to include("Title can't be blank")
@@ -84,7 +147,7 @@ RSpec.describe "Api::Tasks", type: :request do
     let!(:task) { create(:task, user: user) }
 
     before do
-      delete "/api/users/#{user.id}/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
+      delete "/api/tasks/#{task.id}", headers: { 'Accept': 'application/json' }
     end
 
     it { expect(response).to have_http_status(:no_content) }

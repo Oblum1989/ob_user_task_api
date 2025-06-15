@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
   post "/graphql", to: "graphql#execute"
   if Rails.env.development?
     mount GraphiQL::Rails::Engine, at: "/graphiql", graphql_path: "/graphql"
@@ -6,7 +8,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     resources :users, only: [ :index, :show, :create ] do
-      resources :tasks
+      resources :tasks, only: [ :index, :create ]
     end
     resources :tasks
   end

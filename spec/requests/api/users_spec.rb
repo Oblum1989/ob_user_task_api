@@ -1,9 +1,8 @@
-require 'rails_helper'
+require 'swagger_helper'
 
-RSpec.describe "Api::Users", type: :request do
+RSpec.describe 'api/users', type: :request do
   describe "GET /index" do
     let!(:users) { create_list(:user, 3) }
-
     before do
       get "/api/users", headers: { 'Accept': 'application/json' }
     end
@@ -18,19 +17,32 @@ RSpec.describe "Api::Users", type: :request do
   end
 
   describe "GET /show" do
-    let!(:user) { create(:user) }
+    context "Whit user_id valid" do
+      let!(:user) { create(:user) }
+      before do
+        get "/api/users/#{user.id}", headers: { 'Accept': 'application/json' }
+      end
 
-    before do
-      get "/api/users/#{user.id}", headers: { 'Accept': 'application/json' }
+      it { expect(response).to have_http_status(:success) }
+
+      it "returns the user" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['id']).to eq(user.id)
+        expect(json_response['email']).to eq(user.email)
+        expect(json_response['full_name']).to eq(user.full_name)
+      end
     end
+    context "Whit user_id invalid" do
+      before do
+        get "/api/users/999999", headers: { 'Accept': 'application/json' }
+      end
 
-    it { expect(response).to have_http_status(:success) }
+      it { expect(response).to have_http_status(:not_found) }
 
-    it "returns the user" do
-      json_response = JSON.parse(response.body)
-      expect(json_response['id']).to eq(user.id)
-      expect(json_response['email']).to eq(user.email)
-      expect(json_response['full_name']).to eq(user.full_name)
+      it "returns an error message" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']).to eq("User not found")
+      end
     end
   end
 
@@ -56,6 +68,18 @@ RSpec.describe "Api::Users", type: :request do
         expect(json_response['email']).to eq(user_attributes[:user][:email])
         expect(json_response['full_name']).to eq(user_attributes[:user][:full_name])
         expect(json_response['role']).to eq('admin')
+      end
+    end
+    context "with invalid attributes" do
+      before do
+        post "/api/users", params: { user: { email: '', full_name: '', role: '' } }, headers: { 'Accept': 'application/json' }
+      end
+
+      it { expect(response).to have_http_status(:unprocessable_entity) }
+
+      it "returns error messages" do
+        json_response = JSON.parse(response.body)
+        expect(json_response['errors']).to include("Email can't be blank", "Full name can't be blank", "Role can't be blank")
       end
     end
   end

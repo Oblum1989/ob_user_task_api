@@ -1,17 +1,23 @@
 class Api::TasksController < ApplicationController
+  before_action :set_task, only: [ :show, :update, :destroy ]
+  before_action :set_user, only: [ :create, :index ], if: -> { params[:user_id].present? }
   def index
-    @user = User.find(params[:user_id])
-    @tasks = @user.tasks
+    @tasks = @user&.tasks || Task.all
   end
 
   def show
-    @user = User.find(params[:user_id])
-    @task = @user.tasks.find(params[:id])
+    @task = Task.find_by(id: params[:id])
+
+    if @task
+      render :show
+    else
+      render json: { error: "Task not found" }, status: :not_found
+    end
   end
 
   def create
-    @user = User.find(params[:user_id])
-    @task = @user.tasks.new(task_params)
+    @task = Task.new(task_params)
+    @task.user = @user
 
     if @task.save
       render :show, status: :created
@@ -21,9 +27,6 @@ class Api::TasksController < ApplicationController
   end
 
   def update
-    @user = User.find(params[:user_id])
-    @task = @user.tasks.find(params[:id])
-
     if @task.update(task_params)
       render :show, status: :ok
     else
@@ -32,9 +35,6 @@ class Api::TasksController < ApplicationController
   end
 
   def destroy
-    @user = User.find(params[:user_id])
-    @task = @user.tasks.find(params[:id])
-
     if @task.destroy
       head :no_content
     else
@@ -46,7 +46,18 @@ class Api::TasksController < ApplicationController
   def task_params
     params.require(:task).permit(:title, :description, :status, :due_date)
   end
-  def user_params
-    params.require(:user).permit(:email, :full_name, :role)
+
+  def set_task
+    @task = Task.find(params[:id])
+    if @task.nil?
+      render json: { error: "Task not found" }, status: :not_found
+    end
+  end
+
+  def set_user
+    @user = User.find(params[:user_id])
+    if @user.nil?
+      render json: { error: "User not found" }, status: :not_found
+    end
   end
 end
