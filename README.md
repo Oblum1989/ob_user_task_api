@@ -1,24 +1,45 @@
-# README
+# Backend User Task API
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+## 🚀 Descripción
 
-Things you may want to cover:
+Este proyecto es una prueba técnica en Ruby on Rails para evaluar habilidades en desarrollo de APIs RESTful y GraphQL, pruebas automatizadas, dockerización y buenas prácticas de backend.
 
-* Ruby version
+## 📦 Stack Tecnológico
 
-* System dependencies
+- Ruby on Rails
+- PostgreSQL
+- GraphQL (gem `graphql`)
+- RSpec
+- Docker / Docker Compose
+- Jenkins (CI)
+- AWS (despliegue opcional)
 
-* Configuration
+## 📁 Estructura del Proyecto
 
-* Database creation
+```
+app/
+├── controllers/api/         # Controladores REST
+├── graphql/                 # Tipos y mutations GraphQL
+├── models/                  # Modelos ActiveRecord
 
-* Database initialization
+config/                      # Configuración de Rails
+db/migrate/                 # Migraciones
+spec/                       # Pruebas con RSpec
+.docker/                    # Configuración de Docker
+.jenkins/                   # Jenkinsfile o scripts CI
+```
 
-* How to run the test suite
+## 🐳 Uso con Docker
 
-* Services (job queues, cache servers, search engines, etc.)
+```bash
+docker-compose build
+docker-compose up
+```
 
-* Deployment instructions
+La API estará disponible en `http://localhost:3000`.
 
-* ...
+## 🧪 Pruebas
+
+```bash
+docker-compose run web bundle exec rspec
+```

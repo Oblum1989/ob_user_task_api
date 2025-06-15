@@ -49,6 +49,12 @@ group :development, :test do
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
+  
+  # Ruby Dependency Security Scanner
+  gem "bundler-audit", require: false
+  
+  # JUnit formatter for RSpec
+  gem "rspec_junit_formatter"
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
